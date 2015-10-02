@@ -211,20 +211,21 @@ module Middleman
 
           @app.logger.debug '== Rebuilding resource list'
 
-          @resources = @resource_list_manipulators.reduce([]) do |result, (_, inst)|
-            newres = inst.manipulate_resource_list(result)
+          @resources = []
+
+          @resource_list_manipulators.each do |(_, inst)|
+            @resources = inst.manipulate_resource_list(@resources)
 
             # Reset lookup cache
             reset_lookup_cache!
-            newres.each do |resource|
+            
+            @resources.each do |resource|
               @_lookup_by_path[resource.path] = resource
               @_lookup_by_destination_path[resource.destination_path] = resource
             end
 
-            newres
+            invalidate_resources_not_ignored_cache!
           end
-
-          invalidate_resources_not_ignored_cache!
         end
       end
 
@@ -242,7 +243,7 @@ module Middleman
       # @return [String]
       def remove_templating_extensions(path)
         # Strip templating extensions as long as Tilt knows them
-        path = path.sub(File.extname(path), '') while ::Tilt[path]
+        path = path.sub(/#{::Regexp.escape(File.extname(path))}$/, '') while ::Tilt[path]
         path
       end
 

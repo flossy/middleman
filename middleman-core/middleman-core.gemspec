@@ -26,17 +26,17 @@ Gem::Specification.new do |s|
   s.add_dependency("hooks", ["~> 0.3"])
 
   # Builder
-  s.add_dependency("rack-test", ["~> 0.6.2"])
+  s.add_dependency("capybara", ["~> 2.4.4"])
 
   # CLI
   s.add_dependency("thor", [">= 0.15.2", "< 2.0"])
 
   # Helpers
-  s.add_dependency("activesupport", ["~> 4.1.0"])
+  s.add_dependency("activesupport", ["~> 4.1"])
   s.add_dependency("padrino-helpers", ["~> 0.12.3"])
 
   # Watcher
-  s.add_dependency("listen", [">= 2.7.9", "< 3.0"])
+  s.add_dependency("listen", ["~> 3.0.3"])
 
   # i18n
   s.add_dependency("i18n", ["~> 0.7.0"])

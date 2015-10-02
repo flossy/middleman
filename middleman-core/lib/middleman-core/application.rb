@@ -8,10 +8,6 @@ require 'i18n'
 # users expect.
 ::I18n.enforce_available_locales = false
 
-# Use ActiveSupport JSON
-require 'active_support/json'
-require 'active_support/core_ext/integer/inflections'
-
 # Simple callback library
 require 'hooks'
 
@@ -75,7 +71,11 @@ module Middleman
 
     # Which server name should be used
     # @return [NilClass, String]
-    config.define_setting :host, nil, 'The preview host name'
+    config.define_setting :server_name, nil, 'The server name of preview server'
+
+    # Which bind address the preview server should use
+    # @return [NilClass, String]
+    config.define_setting :bind_address, nil, 'The bind address of the preview server'
 
     # Whether to serve the preview server over HTTPS.
     # @return [Boolean]

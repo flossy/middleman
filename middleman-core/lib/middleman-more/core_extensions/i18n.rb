@@ -27,6 +27,8 @@ class Middleman::CoreExtensions::Internationalization < ::Middleman::Extension
 
     app.config.define_setting :locales_dir, 'locales', 'The directory holding your locale configurations'
 
+    ::Middleman::Sitemap::Resource.send :attr_accessor, :locale_root_path
+
     app.send :include, LocaleHelpers
   end
 
@@ -61,8 +63,28 @@ class Middleman::CoreExtensions::Internationalization < ::Middleman::Extension
     def url_for(path_or_resource, options={})
       locale = options.delete(:locale) || ::I18n.locale
 
-      href = super(path_or_resource, options)
-      extensions[:i18n].localized_path(href, locale) || href
+      opts = options.dup
+
+      should_relativize = opts.key?(:relative) ? opts[:relative] : config[:relative_links]
+
+      opts[:relative] = false
+
+      href = super(path_or_resource, opts)
+
+      final_path = if result = extensions[:i18n].localized_path(href, locale)
+        result
+      else
+        # Should we log the missing file?
+        href
+      end
+
+      opts[:relative] = should_relativize
+
+      begin
+        super(final_path, opts)
+      rescue RuntimeError
+        super(path_or_resource, options)
+      end
     end
   end
 
@@ -114,7 +136,10 @@ class Middleman::CoreExtensions::Internationalization < ::Middleman::Extension
   end
 
   def localized_path(path, lang)
-    @lookup[path] && @lookup[path][lang]
+    lookup_path = path.dup
+    lookup_path << app.config[:index_file] if lookup_path.end_with?('/')
+
+    @lookup[lookup_path] && @lookup[lookup_path][lang]
   end
 
   private
@@ -206,6 +231,11 @@ class Middleman::CoreExtensions::Internationalization < ::Middleman::Extension
     def to_resource(app)
       p = ::Middleman::Sitemap::Resource.new(app.sitemap, path)
       p.proxy_to(source_path)
+
+      templates_dir = app.extensions[:i18n].options[:templates_dir]
+
+      p.locale_root_path = source_path.gsub(templates_dir, '')
+
       p
     end
   end
@@ -215,14 +245,14 @@ class Middleman::CoreExtensions::Internationalization < ::Middleman::Extension
     ::I18n.locale = lang
     localized_page_id = ::I18n.t("paths.#{page_id}", default: page_id, fallback: [])
 
-    localized_path = ""
+    partially_localized_path = ''
 
     File.dirname(path).split('/').each do |path_sub|
-      next if path_sub == ""
-      localized_path = "#{localized_path}/#{(::I18n.t("paths.#{path_sub}", default: path_sub).to_s)}"
+      next if path_sub == ''
+      partially_localized_path = "#{partially_localized_path}/#{(::I18n.t("paths.#{path_sub}", default: path_sub).to_s)}"
     end
 
-    path = "#{localized_path}/#{File.basename(path)}"
+    path = "#{partially_localized_path}/#{File.basename(path)}"
 
     prefix = if (options[:mount_at_root] == lang) || (options[:mount_at_root].nil? && langs[0] == lang)
       '/'

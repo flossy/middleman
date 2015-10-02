@@ -1,6 +1,5 @@
-# encoding: UTF-8
-
-require 'rack/test'
+require 'rspec/expectations'
+require 'capybara/cucumber'
 
 Given /^a clean server$/ do
   @initialize_commands = []
@@ -32,8 +31,7 @@ Given /^current environment is "([^\"]*)"$/ do |env|
 end
 
 Given /^the Server is running$/ do
-  root_dir = File.expand_path(current_dir)
-
+  root_dir = File.expand_path(current_directory)
 
   if File.exists?(File.join(root_dir, 'source'))
     ENV['MM_SOURCE'] = 'source'
@@ -49,7 +47,7 @@ Given /^the Server is running$/ do
     set :show_exceptions, false
   }
 
-  in_current_dir do
+  in_current_directory do
     @server_inst = Middleman::Application.server.inst do
       initialize_commands.each do |p|
         instance_exec(&p)
@@ -57,8 +55,7 @@ Given /^the Server is running$/ do
     end
   end
 
-  app_rack = @server_inst.class.to_rack_app
-  @browser = ::Rack::Test::Session.new(::Rack::MockSession.new(app_rack))
+  Capybara.app =  @server_inst.class.to_rack_app
 end
 
 Given /^the Server is running at "([^\"]*)"$/ do |app_path|
@@ -71,61 +68,61 @@ Given /^a template named "([^\"]*)" with:$/ do |name, string|
 end
 
 When /^I go to "([^\"]*)"$/ do |url|
-  in_current_dir do
-    @browser.get(URI.encode(url))
+  in_current_directory do
+    visit(URI.encode(url).to_s)
   end
 end
 
 Then /^going to "([^\"]*)" should not raise an exception$/ do |url|
-  in_current_dir do
-    expect{ @browser.get(URI.encode(url)) }.to_not raise_exception
+  in_current_directory do
+    expect{ visit(URI.encode(url).to_s) }.to_not raise_exception
   end
 end
 
 Then /^the content type should be "([^\"]*)"$/ do |expected|
-  in_current_dir do
-    expect(@browser.last_response.content_type).to start_with(expected)
+  in_current_directory do
+    expect(page.response_headers['Content-Type']).to start_with expected
   end
 end
 
 Then /^I should see "([^\"]*)"$/ do |expected|
-  in_current_dir do
-    expect(@browser.last_response.body).to include(expected)
+  in_current_directory do
+    expect(page.body).to include expected
   end
 end
 
 Then /^I should see '([^\']*)'$/ do |expected|
-  in_current_dir do
-    expect(@browser.last_response.body).to include(expected)
+  in_current_directory do
+    expect(page.body).to include expected
   end
 end
 
 Then /^I should see:$/ do |expected|
-  in_current_dir do
-    expect(@browser.last_response.body).to include(expected)
+  in_current_directory do
+    expect(page.body).to include expected
   end
 end
 
 Then /^I should not see "([^\"]*)"$/ do |expected|
-  in_current_dir do
-    expect(@browser.last_response.body).to_not include(expected)
+  in_current_directory do
+    expect(page.body).not_to include expected
   end
 end
 
 Then /^I should not see:$/ do |expected|
-  in_current_dir do
-    expect(@browser.last_response.body).to_not include(expected.chomp)
+  in_current_directory do
+    expect(page.body).not_to include expected
   end
 end
 
 Then /^the status code should be "([^\"]*)"$/ do |expected|
-  in_current_dir do
-    expect(@browser.last_response.status).to eq expected.to_i
+  in_current_directory do
+    expect(page.status_code).to eq expected.to_i
   end
 end
 
 Then /^I should see "([^\"]*)" lines$/ do |lines|
-  in_current_dir do
-    expect(@browser.last_response.body.chomp.split($/).length).to eq(lines.to_i)
+  in_current_directory do
+    expect(page.body.chomp.split($/).length).to eq lines.to_i
   end
 end

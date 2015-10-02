@@ -217,8 +217,17 @@ module Middleman
             # Render the partial if found, otherwide throw exception
             _render_with_all_renderers(found_partial, locals, self, options, &block)
           else
-            File.read(found_partial)
+            read_template_file(found_partial)
           end
+        end
+
+        def read_template_file(path)
+          data = ::File.open(path, 'rb') { |io| io.read }
+          if data.respond_to?(:force_encoding)
+            # Set it to the default external (without verifying)
+            data.force_encoding(::Encoding.default_external) if ::Encoding.default_external
+          end
+          data
         end
 
         # Partial locator.
@@ -277,6 +286,7 @@ module Middleman
           extension = File.extname(path)
           options = opts.dup.merge(options_for_ext(extension))
           options[:outvar] ||= '@_out_buf'
+          options[:default_encoding] ||= 'UTF-8'
           options.delete(:layout)
 
           # Overwrite with frontmatter options
@@ -306,9 +316,9 @@ module Middleman
           self.class.callbacks_for_hook(:after_render).each do |callback|
             # Uber::Options::Value doesn't respond to call
             newcontent = if callback.respond_to?(:call)
-              content = callback.call(content, path, locs, template_class)
+              callback.call(content, path, locs, template_class)
             elsif callback.respond_to?(:evaluate)
-              content = callback.evaluate(self, content, path, locs, template_class)
+              callback.evaluate(self, content, path, locs, template_class)
             end
             content = newcontent if newcontent # Allow the callback to return nil to skip it
           end
@@ -326,7 +336,7 @@ module Middleman
         # @param [String] path
         # @return [String]
         def template_data_for_file(path)
-          File.read(File.expand_path(path, source_dir))
+          read_template_file(File.expand_path(path, source_dir))
         end
 
         # Get a hash of configuration options for a given file extension, from
@@ -418,6 +428,10 @@ module Middleman
 
           layout_path = locate_layout(layout_name, current_engine)
 
+          unless layout_path
+            raise ::Middleman::CoreExtensions::Rendering::TemplateNotFound, "Could not locate layout: #{layout_name}"
+          end
+
           extension = File.extname(layout_path)
           engine = extension[1..-1].to_sym
 
@@ -448,7 +462,6 @@ module Middleman
         end
 
         # The currently rendering engine
-        # rubocop:disable TrivialAccessors
         # @return [Symbol, nil]
         def current_engine=(v)
           @_current_engine = v
