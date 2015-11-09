@@ -1,10 +1,17 @@
 require 'padrino-helpers'
+require 'padrino-helpers/asset_tag_helpers'
+require 'padrino-helpers/form_helpers'
+require 'padrino-helpers/format_helpers'
+require 'padrino-helpers/number_helpers'
+require 'padrino-helpers/output_helpers'
+require 'padrino-helpers/render_helpers'
+require 'padrino-helpers/tag_helpers'
 
 # Don't fail on invalid locale, that's not what our current
 # users expect.
 ::I18n.enforce_available_locales = false
 
-class Padrino::Helpers::OutputHelpers::ErbHandler
+class ::Padrino::Helpers::OutputHelpers::ErbHandler
   # Force Erb capture not to use safebuffer
   # rubocop:disable UnderscorePrefixedVariableName
   def capture_from_template(*args, &block)
